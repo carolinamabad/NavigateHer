@@ -42,26 +42,22 @@ router.get('/safe-route', async (req, res) => {
             return res.status(400).json({ error: 'Origin and destination are required' });
         }
 
-        // Geocode origin and destination if they are addresses
+        // Geocode origin and destination for addresses
         const geocode = async (address) => {
             const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
-                params: { address, key: process.env.AGOOGLE_MAPS_API_KEY}
-            });
+                params: { address, key: process.env.AGOOGLE_MAPS_API_KEY}});
             if (response.data.results.length === 0) {
-                throw new Error('Address not found');
-            }
+                throw new Error('Address not found');}
             return response.data.results[0].geometry.location;
         };
 
         const originCoords = origin.includes(',') ? 
-            { lat: parseFloat(origin.split(',')[0]), lng: parseFloat(origin.split(',')[1]) } : 
-            await geocode(origin);
+            { lat: parseFloat(origin.split(',')[0]), lng: parseFloat(origin.split(',')[1]) } : await geocode(origin);
 
         const destinationCoords = destination.includes(',') ? 
-            { lat: parseFloat(destination.split(',')[0]), lng: parseFloat(destination.split(',')[1]) } : 
-            await geocode(destination);
+            { lat: parseFloat(destination.split(',')[0]), lng: parseFloat(destination.split(',')[1]) } : await geocode(destination);
 
-        // Fetch routes from Google Directions API
+        // Fetch routes from GD API
         const directionsResponse = await axios.get('https://maps.googleapis.com/maps/api/directions/json', {
             params: {
                 origin: `${originCoords.lat},${originCoords.lng}`, destination: `${destinationCoords.lat},${destinationCoords.lng}`, key: process.env.GOOGLE_MAPS_API_KEY}});
@@ -113,9 +109,9 @@ router.get('/safe-route', async (req, res) => {
     }
 });
 
-// Helper function to calculate distance between two points (Haversine formula)
+// Calculating distance between two points
 function getDistance(lat1, lon1, lat2, lon2) {
-    const R = 3958.8; // Radius of Earth in miles
+    const R = 3958.8; 
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) ** 2;

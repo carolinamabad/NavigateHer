@@ -10,7 +10,7 @@ const crimeRoutes = require('./routes/crimeRoutes.js');
 dotenv.config();
 
 const app = express();
-// Specifying port for site
+// Specifying port
 const PORT = process.env.PORT || 5001;
 
 app.use(express.json());
@@ -19,16 +19,12 @@ app.use(cors());
 // Initialize SQLite 
 const dbPath = './data/database.sqlite';
 const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Error opening database:', err.message);
-    } else {
+    if (err) {console.error('Error opening database:', err.message);} else {
         console.log('Connected to SQLite database');
 
         // Create crimes table
-        db.run(`CREATE TABLE IF NOT EXISTS crimes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, latitude REAL, longitude REAL, category TEXT, date TEXT)`, (err) => {
-            if (err) {
-                console.error('Error creating table:', err.message);
+        db.run(`CREATE TABLE IF NOT EXISTS crimes (id INTEGER PRIMARY KEY AUTOINCREMENT, latitude REAL, longitude REAL, category TEXT, date TEXT)`, (err) => {
+            if (err) {console.error('Error creating table:', err.message);
             } else {
                 console.log('Crimes table ready');
             }
@@ -36,13 +32,11 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
-// Set database instance in app locals for use in routes
+// Set database instance for use in routes
 app.locals.db = db;
 
-// Further set up routes - Crime
+// Further set up crime routes
 app.use('/api/crimes', crimeRoutes);
 
 // Starting the server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => {console.log(`Server running on port ${PORT}`);});
