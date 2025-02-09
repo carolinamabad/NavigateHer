@@ -14,21 +14,35 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: '*' }));
 
 // Initialize SQLite 
-const dbPath = './data/database.sqlite';
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {console.error('Error opening database:', err.message);} else {
-        console.log('Connected to SQLite database');
+const path = require('path');
+const dbPath = path.join(__dirname, 'data', 'database.sqlite');
 
-        // Create crimes table
-        db.run(`CREATE TABLE IF NOT EXISTS crimes (id INTEGER PRIMARY KEY AUTOINCREMENT, latitude REAL, longitude REAL, category TEXT, date TEXT)`, (err) => {
-            if (err) {console.error('Error creating table:', err.message);
-            } else {
-                console.log('Crimes table ready');
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+        console.error('Error opening database:', err.message);
+        process.exit(1); // Exit if the database connection fails
+    } else {
+        console.log(`Connected to SQLite database at ${dbPath}`);
+        
+        db.run(
+            `CREATE TABLE IF NOT EXISTS crimes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                latitude REAL, 
+                longitude REAL, 
+                category TEXT, 
+                date TEXT
+            )`,
+            (err) => {
+                if (err) {
+                    console.error('Error creating table:', err.message);
+                } else {
+                    console.log('Crimes table ready');
+                }
             }
-        });
+        );
     }
 });
 

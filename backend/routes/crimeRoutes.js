@@ -45,7 +45,7 @@ router.get('/safe-route', async (req, res) => {
         // Geocode origin and destination for addresses
         const geocode = async (address) => {
             const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
-                params: { address, key: process.env.AGOOGLE_MAPS_API_KEY}});
+                params: { address, key: process.env.GOOGLE_MAPS_API_KEY}});
             if (response.data.results.length === 0) {
                 throw new Error('Address not found');}
             return response.data.results[0].geometry.location;
