@@ -13,12 +13,12 @@ router.post('/add', (req, res) => {
             console.error('Error adding crime report:', err.message);
             res.status(500).json({ error: 'Could not add crime report' });
         } else {
-            res.status(201).json({ message: 'Crime report was added successfully', id: this.lastID });
+            res.status(201).json({ message: 'Crime report added successfully', id: this.lastID });
         }
     });
 });
 
-// Retrieve crime reports
+// Retrieve all crime reports
 router.get('/fetch', (req, res) => {
     const db = req.app.locals.db;
 
@@ -32,7 +32,7 @@ router.get('/fetch', (req, res) => {
     });
 });
 
-// Establishing safest route based on crime reports
+// Compute the safest route
 router.get('/safe-route', async (req, res) => {
     const db = req.app.locals.db;
     try {
@@ -42,28 +42,36 @@ router.get('/safe-route', async (req, res) => {
             return res.status(400).json({ error: 'Origin and destination are required' });
         }
 
-        // Geocode origin and destination for addresses
+        // Geocode origin and destination
         const geocode = async (address) => {
             const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
-                params: { address, key: process.env.GOOGLE_MAPS_API_KEY}});
+                params: { address, key: process.env.GOOGLE_MAPS_API_KEY }
+            });
             if (response.data.results.length === 0) {
-                throw new Error('Address not found');}
+                throw new Error('Address not found');
+            }
             return response.data.results[0].geometry.location;
         };
 
-        const originCoords = origin.includes(',') ? 
-            { lat: parseFloat(origin.split(',')[0]), lng: parseFloat(origin.split(',')[1]) } : await geocode(origin);
+        const originCoords = origin.includes(',') 
+            ? { lat: parseFloat(origin.split(',')[0]), lng: parseFloat(origin.split(',')[1]) } 
+            : await geocode(origin);
 
-        const destinationCoords = destination.includes(',') ? 
-            { lat: parseFloat(destination.split(',')[0]), lng: parseFloat(destination.split(',')[1]) } : await geocode(destination);
+        const destinationCoords = destination.includes(',') 
+            ? { lat: parseFloat(destination.split(',')[0]), lng: parseFloat(destination.split(',')[1]) } 
+            : await geocode(destination);
 
-        // Fetch routes from GD API
+        // Fetch routes from Google Directions API
         const directionsResponse = await axios.get('https://maps.googleapis.com/maps/api/directions/json', {
             params: {
-                origin: `${originCoords.lat},${originCoords.lng}`, destination: `${destinationCoords.lat},${destinationCoords.lng}`, key: process.env.GOOGLE_MAPS_API_KEY}});
+                origin: `${originCoords.lat},${originCoords.lng}`,
+                destination: `${destinationCoords.lat},${destinationCoords.lng}`,
+                key: process.env.GOOGLE_MAPS_API_KEY
+            }
+        });
 
         const routes = directionsResponse.data.routes;
-        if (!routes.length) return res.status(404).json({ error: 'No route found' });
+        if (!routes.length) return res.status(404).json({ error: 'No routes found' });
 
         let safestRoute = null;
         let minCrimeCount = Infinity;
@@ -76,7 +84,7 @@ router.get('/safe-route', async (req, res) => {
             });
         });
 
-        // Analyze each route
+        // Analyze routes for crime proximity
         routes.forEach((route) => {
             let crimeCount = 0;
 
@@ -84,7 +92,6 @@ router.get('/safe-route', async (req, res) => {
                 leg.steps.forEach((step) => {
                     const { start_location, end_location } = step;
 
-                    // Count crimes near each step
                     crimes.forEach((crime) => {
                         const crimeDistanceStart = getDistance(crime.latitude, crime.longitude, start_location.lat, start_location.lng);
                         const crimeDistanceEnd = getDistance(crime.latitude, crime.longitude, end_location.lat, end_location.lng);
@@ -109,9 +116,9 @@ router.get('/safe-route', async (req, res) => {
     }
 });
 
-// Calculating distance between two points
+// Calculate distance between two coordinates
 function getDistance(lat1, lon1, lat2, lon2) {
-    const R = 3958.8; 
+    const R = 6371; // Earth's radius in kilometers
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) ** 2;
